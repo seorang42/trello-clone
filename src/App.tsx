@@ -3,6 +3,8 @@ import { useRecoilState } from "recoil";
 import { styled } from "styled-components";
 import { toDoState } from "./atoms";
 import Board from "./Components/Board";
+import { useForm } from "react-hook-form";
+import TrashCan from "./Components/TrashCan";
 
 const Wrapper = styled.div`
   display: flex;
@@ -11,6 +13,20 @@ const Wrapper = styled.div`
   justify-content: center;
   align-items: center;
   height: 100vh;
+  flex-direction: column;
+  gap: 20px;
+  input {
+    width: 280px;
+    height: 30px;
+    border: none;
+    border-radius: 5px;
+  }
+`;
+
+const Title = styled.h1`
+  font-weight: 600;
+  font-size: 2rem;
+  color: white;
 `;
 
 const Boards = styled.div`
@@ -21,12 +37,29 @@ const Boards = styled.div`
   gap: 10px;
 `;
 
+interface IForm {
+  boardId: string;
+}
+
 function App() {
   const [toDos, setToDos] = useRecoilState(toDoState);
+  const { register, setValue, handleSubmit } = useForm<IForm>();
+  const onValid = ({ boardId }: IForm) => {
+    setToDos((allBoards) => {
+      return {
+        ...allBoards,
+        [boardId]: [],
+      };
+    });
+    setValue("boardId", "");
+  };
   const onDragEnd = (info: DropResult) => {
     const { destination, draggableId, source } = info;
     if (!destination) return;
-    if (destination?.droppableId === source.droppableId) {
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.droppableId !== "trash"
+    ) {
       // same board movement
       setToDos((allBoards) => {
         const boardCopy = [...allBoards[source.droppableId]];
@@ -39,7 +72,10 @@ function App() {
         };
       });
     }
-    if (destination.droppableId !== source.droppableId) {
+    if (
+      destination.droppableId !== source.droppableId &&
+      destination.droppableId !== "trash"
+    ) {
       // cross board movement
       setToDos((allBoards) => {
         const sourceBoard = [...allBoards[source.droppableId]];
@@ -54,15 +90,34 @@ function App() {
         };
       });
     }
+    if (destination.droppableId === "trash") {
+      setToDos((allBoards) => {
+        const sourceBoard = [...allBoards[source.droppableId]];
+        sourceBoard.splice(source.index, 1);
+        return {
+          ...allBoards,
+          [source.droppableId]: sourceBoard,
+        };
+      });
+    }
   };
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Wrapper>
+        <Title>Task Board</Title>
+        <form onSubmit={handleSubmit(onValid)}>
+          <input
+            {...register("boardId")}
+            type="text"
+            placeholder="추가할 보드의 이름을 적어주세요"
+          />
+        </form>
         <Boards>
           {Object.keys(toDos).map((boardId) => (
             <Board boardId={boardId} key={boardId} toDos={toDos[boardId]} />
           ))}
         </Boards>
+        <TrashCan />
       </Wrapper>
     </DragDropContext>
   );
