@@ -1,4 +1,4 @@
-## Trello 클론 코딩
+## Trello 클론 코딩 - Trello Clone Coding
 
 ### 프로젝트 정보
 
